@@ -1,0 +1,277 @@
+/************************************************/
+/*Name: Ryan Bahm                               */
+/*Robot: Omnidirectional 3-wheeled robot        */
+/*Filename: OmniBot.nqc                         */
+/*Date: 3-10-2010                               */
+/************************************************/
+
+#define wheel SENSOR_1
+#define resetButton SENSOR_2
+#define goButton SENSOR_3
+
+#define wheelRevs 80 //How many times will the sensor go around for 360 degrees?
+
+
+int wheelSpeed; //How much has the wheel moved since the last loop? (In rotation sensor ticks)
+int bearing=0; //Which direction do we want to go? (In degrees)
+
+task main()
+{
+	SetSensor(wheel,SENSOR_ROTATION);
+	SetSensor(goButton,SENSOR_TOUCH);
+	SetSensor(resetButton,SENSOR_TOUCH);
+	
+	while(true)
+	{
+    if(resetButton == 1)
+    {
+      bearing=0;
+    }
+	
+		if(goButton == 0) //If the user is not holding the "go" button.
+		{
+			wheelSpeed=wheel*2; //Read the wheel and multiply by 2.
+			ClearSensor(wheel); //Clear the wheel
+			
+			if(wheelSpeed > 7) //7 is the maximum speed, so if it's higher, set it to 7 to reduce confusion.
+			{
+				wheelSpeed=7;
+			}
+			
+			else if(wheelSpeed < -7)
+			{
+        wheelSpeed=-7;
+      }
+			
+			spin(wheelSpeed);
+			
+		}
+		
+		else if(goButton == 1) //If the user is holding the "go" button.
+		{
+			wheelSpeed=wheel; //Read the wheel sensor
+			ClearSensor(wheel); //Clear the wheel sensor
+			
+			wheelSpeed=(360/wheelRevs)*wheelSpeed; //Calculate the degrees turned.
+			
+			bearing=bearing-wheelSpeed; //Bearing is our running total of intended direction.
+			
+			if(bearing >= 360) //If we've managed to get a degree value which is too high...
+			{
+			bearing=bearing-360;
+			}
+			
+			if(bearing < 0) //If we've managed to get a degree value which is too low...
+			{
+			bearing=bearing+360;
+			}
+			
+			drive(bearing);
+			
+		}
+		
+		
+	}
+	
+		
+Float(OUT_A+OUT_B+OUT_C);	 //Turning off motors completely. This serves no function except when the "run" button is pressed again.
+}
+
+void drive(int direction)
+{
+	int aPower;
+	int bPower;
+	int cPower;
+	
+  /* This section were the attempts to calculate the motor values using fancy math. Unfortunately, it failed, due to the lack of cosine and float support in the RCX.
+
+  // These equations yield the exact power level, from -7 to +7, required to run the omnibot in exactly the desired direction. They can be changed to any power level by changing the "7"
+  aPower=7*cos(direction-30);
+  bPower=7*cos(direction-150);
+  cPower=7*cos(direction+90);
+ */
+
+  /*****************Power Calculations*********************/
+  /****Using a linear approximation based on key points****/
+  /*Summarized in flowchart using above equations. If possible, above equations should be used at any cost.*/
+  if(direction <= 30)
+  {
+    aPower=(2/60)*direction+6;
+    bPower=(5/60)*direction-6;
+    cPower=(-7/60)*direction+0;
+  }
+  else if (direction <= 60)
+  {
+    aPower=(-2/60)*(direction-30)+7;
+    bPower=(7/60)*(direction-30)-(7/2); //Could also be 4. See how this works.
+    cPower=(-5/60)*(direction-30)-(7/2); //Could also be 4.
+  }
+  else if (direction <= 90)
+  {
+    aPower=(-5/60)*(direction-60)+6;
+    bPower=(7/60)*(direction-60)+0;
+    cPower=(-2/60)*(direction-60)-6;
+  }
+  else if (direction <= 120)
+  {
+    aPower=(-7/60)*(direction-90)+(7/2);//4?
+    bPower=(5/60)*(direction-90)+(7/2); //Could also be 4. See how this works.
+    cPower=(2/60)*(direction-90)-7;
+  }
+  else if (direction <= 150)
+  {
+    aPower=(-7/60)*(direction-120)+0;
+    bPower=(2/60)*(direction-120)+6;
+    cPower=(5/60)*(direction-120)-6;
+  }
+  else if (direction <= 180)
+  {
+    aPower=(-5/60)*(direction-150)-(7/2); //4?
+    bPower=(-2/60)*(direction-150)+7;
+    cPower=(7/60)*(direction-150)-(7/2); //Could also be 4.
+  }
+  else if (direction <= 210)
+  {
+    aPower=(-2/60)*(direction-180)-6;
+    bPower=(-5/60)*(direction-180)+6;
+    cPower=(7/60)*(direction-180)+0;
+  }
+  else if (direction <= 240)
+  {
+    aPower=(2/60)*(direction-210)-7;
+    bPower=(-7/60)*(direction-210)+(7/2); //Could also be 4. See how this works.
+    cPower=(5/60)*(direction-210)+(7/2); //Could also be 4.
+  }
+  else if (direction <= 270)
+  {
+    aPower=(5/60)*(direction-240)-6;
+    bPower=(-7/60)*(direction-240)+0;
+    cPower=(2/60)*(direction-240)+6;
+  }
+  else if (direction <= 300)
+  {
+    aPower=(7/60)*(direction-270)-(7/2); //4?
+    bPower=(-5/60)*(direction-270)-(7/2); //Could also be 4. See how this works.
+    cPower=(-2/60)*(direction-270)+7;
+  }
+  else if (direction <= 330)
+  {
+    aPower=(7/60)*(direction-300)+0;
+    bPower=(-2/60)*(direction-300)-6;
+    cPower=(-5/60)*(direction-300)+6;
+  }
+  else if (direction <= 360)
+  {
+    aPower=(5/60)*(direction-330)+(7/2); //4?
+    bPower=(2/60)*(direction-330)-7;
+    cPower=(-7/60)*(direction-330)+(7/2);
+  }
+  
+
+  /***************End Power Calculations*******************/
+
+
+	
+	//MOTOR A
+	if(aPower > 0)
+	{
+    aPower++;
+    if(aPower > 7)
+    {
+    aPower=7;
+    }
+		SetPower(OUT_A,aPower);
+		OnFwd(OUT_A);
+	}
+	else if(aPower < 0)
+	{
+    aPower=-aPower; //Reverse the variable to input into SetPower
+    aPower++;
+    if(aPower > 7)
+    {
+    aPower=7;
+    }
+		SetPower(OUT_A,aPower);
+		OnRev(OUT_A);
+	}
+	else //If it's "0"
+	{
+		Off(OUT_A);
+	}
+		
+	//MOTOR B	
+		if(bPower > 0)
+	{
+    bPower++;
+    if(bPower > 7)
+    {
+    bPower=7;
+    }
+		SetPower(OUT_B,bPower);
+		OnFwd(OUT_B);
+	}
+	else if(bPower < 0)
+	{
+    bPower=-bPower;
+    bPower++;
+    if(bPower > 7)
+    {
+    bPower=7;
+    }
+		SetPower(OUT_B,bPower);
+		OnRev(OUT_B);
+	}
+	else //If it's "0"
+	{
+		Off(OUT_B);
+	}
+	
+	//MOTOR C
+		if(cPower > 0)
+    {
+    cPower++;
+    if(cPower > 7)
+    {
+    cPower=7;
+    }
+		SetPower(OUT_C,cPower);
+		OnFwd(OUT_C);
+	}
+	else if(cPower < 0)
+	{
+    cPower++;
+    if(cPower > 7)
+    {
+    cPower=7;
+    }
+    cPower=-cPower;
+		SetPower(OUT_C,-cPower);
+		OnRev(OUT_C);
+	}
+	else //If it's "0"
+	{
+		Off(OUT_C);
+	}
+}
+
+
+void spin(int spinSpeed)
+{
+	if(spinSpeed > 0)
+	{
+		SetPower(OUT_A+OUT_B+OUT_C,spinSpeed);
+		OnFwd(OUT_A+OUT_B+OUT_C);
+	}
+	
+	else if(spinSpeed < 0)
+	{
+    spinSpeed=-spinSpeed;
+		SetPower(OUT_A+OUT_B+OUT_C,spinSpeed);
+		OnRev(OUT_A+OUT_B+OUT_C);
+	}
+	
+	else //No speed
+	{
+	Off(OUT_A+OUT_B+OUT_C);
+	}
+}

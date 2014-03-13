@@ -1,7 +1,6 @@
 RCX-Omni
 ========
-Written 3-10-2010
-Released to Public Domain 3-13-2014
+Written 3-10-2010 Released to Public Domain 3-13-2014
 
 
 RCX-Omni is a program for the original RCX (1.0) which was written for CSCI 172 at Western Washington University in Spring quarter of 2010.
